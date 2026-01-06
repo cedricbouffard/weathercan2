@@ -139,7 +139,7 @@ download_station_data <- function(stn_id, collection, start_date, end_date, verb
   stn_info <- all_stations |>  dplyr::filter(station_id == stn_id)
   
   if (nrow(stn_info) == 0) {
-    warning(sprintf("Station ID %s not found", station_id))
+    warning(sprintf("Station ID %s not found", stn_id))
     return(tibble::tibble())
   }
   
@@ -169,7 +169,7 @@ download_station_data <- function(stn_id, collection, start_date, end_date, verb
     
     if (httr::status_code(response) != 200) {
       warning(sprintf("Error downloading data for station %s: HTTP %s",
-                     station_id, httr::status_code(response)))
+                     stn_id, httr::status_code(response)))
       break
     }
     
@@ -187,7 +187,7 @@ download_station_data <- function(stn_id, collection, start_date, end_date, verb
 
       obs <- tibble::tibble(
         station_name = station_name,
-        station_id = station_id,
+        station_id = stn_id,
         climate_id = climate_id,
         prov = prov,
         lat = lat,

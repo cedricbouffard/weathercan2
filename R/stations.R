@@ -45,18 +45,18 @@ stations_dl <- function(refresh = FALSE,
    
   # Handle cache directory
   if (!is.null(cache_dir)) {
-    cache_path <- cache_file
-  } else {
     # Create directory if it doesn't exist
     if (!dir.exists(cache_dir)) {
       tryCatch(
-        dir.create(cache_dir),
+        dir.create(cache_dir, recursive = TRUE),
         error = function(e) {
           warning(sprintf("Could not create cache directory: %s", e$message))
         }
       )
     }
     cache_path <- file.path(cache_dir, cache_file)
+  } else {
+    cache_path <- cache_file
   }
   
   # Check if cache exists and is recent
@@ -99,7 +99,7 @@ stations_dl <- function(refresh = FALSE,
         station_name = props$STATION_NAME,
         station_id = props$STN_ID,
         climate_id = props$CLIMATE_IDENTIFIER,
-        prov = props$PROV_STATE_TERR_CODE,
+        prov = trimws(props$PROV_STATE_TERR_CODE),
         lat = props$LATITUDE / 1e7,
         lon = props$LONGITUDE / 1e7,
         elev = as.numeric(props$ELEVATION),
@@ -130,8 +130,8 @@ stations_dl <- function(refresh = FALSE,
   
   # Save to cache
   tryCatch({
-    saveRDS(all_stations, cache_file)
-    message(sprintf("Saved stations to cache: %s", cache_file))
+    saveRDS(all_stations, cache_path)
+    message(sprintf("Saved stations to cache: %s", cache_path))
   }, error = function(e) {
     warning(sprintf("Could not save cache: %s", e$message))
   })
@@ -183,19 +183,19 @@ stations_search <- function(name = NULL, climate_id = NULL, station_id = NULL,
     # Handle single climate_id or vector
     climate_ids_upper <- toupper(climate_id)
     all_stations <- all_stations |> 
-      dplyr::filter(climate_id %in% climate_ids_upper)
+      dplyr::filter(.env$climate_id %in% climate_ids_upper)
   }
   
   # Filter by station_id
   if (!is.null(station_id)) {
     all_stations <- all_stations |> 
-      dplyr::filter(station_id %in% station_id)
+      dplyr::filter(.env$station_id %in% station_id)
   }
   
   # Filter by province
   if (!is.null(prov)) {
     all_stations <- all_stations |> 
-      dplyr::filter(prov == toupper(prov))
+      dplyr::filter(!is.na(.env$prov) & .env$prov == trimws(toupper(prov)))
   }
   
   # Filter by interval
@@ -232,7 +232,7 @@ stations_search <- function(name = NULL, climate_id = NULL, station_id = NULL,
       dplyr::mutate(
         distance = geosphere::distHaversine(
           coords_matrix,
-          cbind(.data$lon, .data$lat)
+          cbind(.env$lon, .env$lat)
         ) / 1000  # Convert to km
       ) |> 
       dplyr::filter(distance <= dist)

@@ -5,5 +5,5 @@ test_that("package can be loaded", {
 })
 
 test_that("required packages are available", {
-  expect_s3_class(weathercan2:::API_BASE_URL, "character")
+  expect_type(weathercan2:::API_BASE_URL, "character")
 })
