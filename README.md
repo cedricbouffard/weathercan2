@@ -3,11 +3,7 @@
 ## Installation
 
 ```r
-# From local source
-devtools::install()
-
-# From CRAN (when available)
-install.packages("weathercan2")
+devtools::install_github("cedricbouffard/weathercan2")
 ```
 
 ## Quick Start
