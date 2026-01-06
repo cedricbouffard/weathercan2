@@ -1,0 +1,263 @@
+---
+title: "Getting Started with weathercan2"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with weathercan2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+`weathercan2` is an R package for downloading historical weather data from Environment and Climate Change Canada (ECCC) using the MSC GeoMet API. This package provides functions to search for weather stations and download daily, hourly, and monthly weather observations.
+
+This package is inspired by the original `weathercan` package but uses the modern MSC GeoMet API for faster and more reliable data access.
+
+# Installation
+
+```{r installation, eval=FALSE}
+# Install from CRAN (when available)
+install.packages("weathercan2")
+
+# Install from GitHub
+devtools::install_github("yourusername/weathercan2")
+```
+
+```{r load-package, eval=FALSE}
+library(weathercan2)
+```
+
+# Finding Stations
+
+The first step in downloading weather data is finding the station(s) you're interested in. The `stations()` function returns all available climate stations:
+
+```{r all-stations, eval=FALSE}
+# Get all stations (this may take a while)
+all_stations <- stations()
+
+# View the first few stations
+head(all_stations)
+```
+
+The resulting tibble contains information about each station:
+
+- `station_name`: The name of the station
+- `station_id`: The internal station ID
+- `climate_id`: The climate identifier used in API queries
+- `prov`: Province/territory code
+- `lat`, `lon`: Coordinates
+- `elev`: Elevation in meters
+- `tz`: Timezone
+- `has_daily`, `has_hourly`, `has_monthly`: Boolean indicating data availability
+- `has_normals`: Whether climate normals are available
+
+## Searching for Stations
+
+You can search for stations using the `stations_search()` function:
+
+### Search by Name
+
+```{r search-name, eval=FALSE}
+# Search for stations with "Kamloops" in the name
+kamloops <- stations_search(name = "Kamloops")
+print(kamloops)
+```
+
+### Search by Province
+
+```{r search-prov, eval=FALSE}
+# Search for stations in British Columbia
+bc_stations <- stations_search(prov = "BC")
+print(bc_stations)
+```
+
+### Search by Data Interval
+
+```{r search-interval, eval=FALSE}
+# Search for hourly stations
+hourly_stations <- stations_search(prov = "BC", interval = "hour")
+
+# Search for daily stations
+daily_stations <- stations_search(prov = "ON", interval = "day")
+```
+
+### Search by Proximity
+
+```{search-proximity, eval=FALSE}
+# Find stations within 20km of a location
+nearby <- stations_search(coords = c(50.7, -120.3), dist = 20)
+print(nearby)
+```
+
+### Search by Climate ID
+
+```{r search-climate-id, eval=FALSE}
+# Search for a specific station by climate ID
+station <- stations_search(climate_id = "101AE00")
+print(station)
+```
+
+# Downloading Weather Data
+
+Once you've identified the station(s) you want data from, use `weather_dl()` to download weather observations:
+
+## Download Daily Data
+
+```{r download-daily, eval=FALSE}
+# Download daily data for a station
+daily_data <- weather_dl(
+  climate_id = "101AE00",
+  start = "2020-01-01",
+  end = "2020-12-31",
+  interval = "day"
+)
+
+head(daily_data)
+```
+
+## Download Hourly Data
+
+```{r download-hourly, eval=FALSE}
+# Download hourly data
+hourly_data <- weather_dl(
+  climate_id = "101AE00",
+  start = "2020-06-01",
+  end = "2020-06-07",
+  interval = "hour"
+)
+
+head(hourly_data)
+```
+
+## Download for Multiple Stations
+
+```{r download-multiple, eval=FALSE}
+# Download data for multiple stations
+multi_data <- weather_dl(
+  station_ids = c(114, 2, 3),
+  start = "2020-01-01",
+  end = "2020-01-31",
+  interval = "day"
+)
+```
+
+## Using Station Names
+
+```{r download-name, eval=FALSE}
+# Search by station name and download
+data <- weather_dl(
+  station_names = "Victoria Gonzales",
+  start = "2019-01-01",
+  end = "2019-12-31",
+  interval = "day"
+)
+```
+
+# Data Structure
+
+The downloaded weather data includes:
+
+- Station metadata (name, ID, location, elevation, timezone)
+- Date/time information
+- Weather observations (temperature, precipitation, wind, humidity, etc.)
+- Quality flags (where available)
+
+For example, daily observations typically include:
+
+- `LOCAL_DATE`: Date of observation
+- `MEAN_TEMPERATURE`: Mean daily temperature
+- `MIN_TEMPERATURE`, `MAX_TEMPERATURE`: Daily min/max temperatures
+- `TOTAL_PRECIPITATION`: Total precipitation
+- `TOTAL_RAIN`, `TOTAL_SNOW`: Rain and snow amounts
+- `SNOW_ON_GROUND`: Snow depth
+- `HEATING_DEGREE_DAYS`, `COOLING_DEGREE_DAYS`: Degree days
+- Humidity measurements
+- Wind measurements
+
+# Climate Normals
+
+Climate normals are 30-year averages of climate variables. Download them with `normals_dl()`:
+
+```{r normals, eval=FALSE}
+# Download current normals (1991-2020)
+current_normals <- normals_dl("101AE00")
+print(current_normals)
+
+# Download historical normals
+normals_1980 <- normals_dl("101AE00", normals_years = "1981-2010")
+print(normals_1980)
+```
+
+# Complete Workflow Example
+
+Here's a complete example workflow:
+
+```{r workflow, eval=FALSE}
+library(weathercan2)
+library(dplyr)
+library(ggplot2)
+
+# 1. Find stations in a region
+stations <- stations_search(prov = "BC", interval = "day")
+stations
+#> # A tibble: ... x ...
+#>   station_name station_id climate_id prov   ...
+#>   <chr>            <dbl> <chr>       <chr>  ...
+#> 1 VICTORIA GONZALEZ CS   114  1018611    BC     ...
+
+# 2. Select a station
+station <- stations[1, ]
+
+# 3. Download data
+data <- weather_dl(
+  station_ids = station$station_id,
+  start = "2020-01-01",
+  end = "2020-12-31",
+  interval = "day",
+  verbose = TRUE
+)
+
+# 4. Analyze the data
+# View temperature data
+data %>%
+  select(LOCAL_DATE, MEAN_TEMPERATURE, MAX_TEMPERATURE, MIN_TEMPERATURE) %>%
+  head()
+
+# Plot temperature over time
+ggplot(data, aes(x = LOCAL_DATE, y = MEAN_TEMPERATURE)) +
+  geom_line() +
+  labs(
+    title = paste("Temperature at", station$station_name),
+    x = "Date",
+    y = "Mean Temperature (°C)"
+  ) +
+  theme_minimal()
+```
+
+# API Limitations
+
+Be aware of the following limitations when using the MSC GeoMet API:
+
+- Large date ranges may take time to download
+- There is a limit of 10,000 records per query (handled automatically by pagination)
+- Some historical data may not be available
+- API is free and anonymous, but be respectful with large downloads
+
+# Data License
+
+Weather data from Environment and Climate Change Canada is licensed under the [Open Government License - Canada](http://open.canada.ca/en/open-government-licence-canada).
+
+# Getting Help
+
+If you encounter issues or have questions:
+
+1. Check the function documentation with `?function_name`
+2. Report issues on GitHub at https://github.com/yourusername/weathercan2/issues
+3. Contact ECCC at donneesclimatiquesenligne-climatedataonline@ec.gc.ca

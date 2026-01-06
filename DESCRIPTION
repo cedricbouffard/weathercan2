@@ -1,0 +1,35 @@
+Package: weathercan2
+Title: Download and Format Weather Data from Environment and Climate Change Canada
+Version: 0.1.0
+Authors@R:
+    person(given = "Your",
+           family = "Name",
+           role = c("aut", "cre"),
+           email = "your.email@example.com")
+Description: Download historical weather data from Environment and Climate Change Canada (ECCC)
+    using the MSC GeoMet API. Provides functions to search for weather stations and download
+    daily, hourly, and monthly weather observations.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.0.0)
+Imports:
+    httr,
+    tibble,
+    dplyr,
+    jsonlite,
+    lubridate,
+    sf,
+    stringr,
+    geosphere,
+    rlang
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+URL: https://github.com/yourusername/weathercan2
+BugReports: https://github.com/yourusername/weathercan2/issues
